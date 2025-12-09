@@ -4,6 +4,7 @@ import { Player } from './Player.js';
 import { GameScene } from './GameScene.js';
 import { AudioManager } from './AudioManager.js';
 import { FPSCounter } from './FPSCounter.js';
+import { SpeechRecognitionManager } from './SpeechRecognitionManager.js';
 
 export class Game {
   constructor() {
@@ -11,82 +12,79 @@ export class Game {
     this.gameScene = new GameScene();
     this.player = new Player(this.inputManager);
     this.audioManager = new AudioManager(this.player.getCamera());
-    this.fpsCounter = new FPSCounter(); 
+    this.fpsCounter = new FPSCounter();
+    this.speechRecognitionManager = new SpeechRecognitionManager();
+    this.speechIndicator = document.getElementById('speech-indicator');
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowShadowMap;
 
-    this.isPaused = false; 
+    this.isPaused = false;
     this.animationFrameId = null;
 
-    // Nova referência ao menu de configurações
-    this.settingsMenu = document.getElementById('settings-container'); 
+    this.settingsMenu = document.getElementById('settings-container');
     if (!this.settingsMenu) {
         console.error("O 'settings-container' elemenento não foi encontrado no DOM.");
     }
-    
-    // Adiciona o canvas do renderer ao container apropriado
+
     const container = document.getElementById('canvas-container');
     if (container) {
       container.appendChild(this.renderer.domElement);
     }
 
-    // Verifica se o jogo deve iniciar com o menu aberto
     const params = new URLSearchParams(window.location.search);
     if (params.get('startMenu') === 'true') {
-        // Inicializa o jogo despausado (isPaused = false), mas chama o togglePause
-        // que irá pausar o jogo e abrir o menu.
-        this.togglePause(); 
+        this.togglePause();
     }
 
     this.setupEventListeners();
     this.setupAudio();
     this.setupCollisions();
     this.setupPlayerAudio();
+    this.setupSpeechIndicator();
     this.animate();
   }
 
 togglePause() {
-    // alterna o estado de pausa 
     this.isPaused = !this.isPaused; 
 
     if (this.isPaused) {
-        // Ações de pausa
         if (this.settingsMenu) {
             this.settingsMenu.style.display = 'block';
         }
         
-        // Para o loop do jogo
         if (this.animationFrameId !== null) {
             cancelAnimationFrame(this.animationFrameId);
-            this.animationFrameId = null; // limpa o ID após cancelar
+            this.animationFrameId = null; 
         }
                
     } else {
-        // Restauração após pausa
         if (this.settingsMenu) {
             this.settingsMenu.style.display = 'none';
         }
         
-        // Reinicia o loop do jogo
         this.animate();       
     }
 }
 
   setupEventListeners() {
     window.addEventListener('resize', () => this.onWindowResize());
-  
+
     // Event listener para a tecla "P" para pausar/despausar o jogo
     document.addEventListener('keydown', (event) => {
         if (event.key.toLowerCase() === "p") {
             this.togglePause();
         }
+        // Event listener para a tecla "V" para iniciar/parar a captura de voz
+        if (event.key.toLowerCase() === "v") {
+            this.speechRecognitionManager.toggle();
+        }
     });
     // Event Listener para perda de foco (mudança de aba ou minimização)
     document.addEventListener('visibilitychange', () => this.handleFocusChange());
-    
+
     //Event Listener para o clique fora da janela do navegador (opcional, use blur/focus)
     window.addEventListener('blur', () => this.handleBlur());
     window.addEventListener('focus', () => this.handleFocus());
@@ -141,6 +139,20 @@ handleFocus() {
     };
   }
 
+  setupSpeechIndicator() {
+    this.speechRecognitionManager.onListeningStart = () => {
+      if (this.speechIndicator) {
+        this.speechIndicator.style.display = 'flex';
+      }
+    };
+
+    this.speechRecognitionManager.onListeningStop = () => {
+      if (this.speechIndicator) {
+        this.speechIndicator.style.display = 'none';
+      }
+    };
+  }
+
   onWindowResize() {
     this.player.onWindowResize();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -178,5 +190,6 @@ handleFocus() {
     this.gameScene.dispose();
     this.renderer.dispose();
     this.fpsCounter.dispose();
+    this.speechRecognitionManager.stop();
   }
 }
