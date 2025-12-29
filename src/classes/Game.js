@@ -35,7 +35,9 @@ export class Game {
     }
 
     const params = new URLSearchParams(window.location.search);
-    if (params.get('startMenu') === 'true') {
+    this.settingsOnlyMode = params.get('startMenu') === 'true';
+    if (this.settingsOnlyMode) {
+        this.hideGameUI();
         this.togglePause();
     }
 
@@ -48,25 +50,45 @@ export class Game {
   }
 
 togglePause() {
-    this.isPaused = !this.isPaused; 
+    this.isPaused = !this.isPaused;
 
     if (this.isPaused) {
         if (this.settingsMenu) {
             this.settingsMenu.style.display = 'block';
         }
-        
+
         if (this.animationFrameId !== null) {
             cancelAnimationFrame(this.animationFrameId);
-            this.animationFrameId = null; 
+            this.animationFrameId = null;
         }
-               
+
     } else {
         if (this.settingsMenu) {
             this.settingsMenu.style.display = 'none';
         }
-        
-        this.animate();       
+
+        this.animate();
     }
+}
+
+hideGameUI() {
+    const elementsToHide = [
+        'canvas-container',
+        'health-bar-container',
+        'pergaminho-magico',
+        'hud',
+        'menu-button',
+        'crosshair',
+        'info',
+        'speech-indicator'
+    ];
+
+    elementsToHide.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.style.display = 'none';
+        }
+    });
 }
 
   setupEventListeners() {
@@ -74,11 +96,11 @@ togglePause() {
 
     // Event listener para a tecla "P" para pausar/despausar o jogo
     document.addEventListener('keydown', (event) => {
-        if (event.key.toLowerCase() === "p") {
+        if (event.key.toLowerCase() === "p" && !this.settingsOnlyMode) {
             this.togglePause();
         }
         // Event listener para a tecla "V" para iniciar/parar a captura de voz
-        if (event.key.toLowerCase() === "v") {
+        if (event.key.toLowerCase() === "v" && !this.settingsOnlyMode) {
             this.speechRecognitionManager.toggle();
         }
     });
@@ -91,15 +113,13 @@ togglePause() {
   } 
 
 handleFocusChange() {
+    if (this.settingsOnlyMode) return;
+
     if (document.hidden) {
-        // Se a página não está visível, pausamos.
-        // O togglePause() só pausará se já não estiver pausado.
-        if (!this.isPaused) { 
+        if (!this.isPaused) {
             this.togglePause();
         }
     } else {
-        // Se a página voltou a ficar visível, despausamos.
-        // O togglePause() só despausará se estiver pausado.
         if (this.isPaused) {
             this.togglePause();
         }
@@ -107,15 +127,18 @@ handleFocusChange() {
 }
 
 handleBlur() {
-    // Perdeu o foco do navegador
+    if (this.settingsOnlyMode) return;
+
     if (!this.isPaused) {
         this.togglePause();
     }
 }
 
 handleFocus() {
+    if (this.settingsOnlyMode) return;
+
     if (this.isPaused) {
-      this.togglePause(); 
+        this.togglePause();
     }
 }
 

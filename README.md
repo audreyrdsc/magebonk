@@ -44,4 +44,7 @@ O deslocamento do personagem pelo mapa ocorre pelo controle WASD, em que:
 - D - Projeta o jogador para a direita.
 
 x - Movimento da Camera do Jogador:
-As direções da camera do jogador são executadas por meio do mouse.
+As direções da camera do jogador são executadas por meio do mouse. 
+
+
+
